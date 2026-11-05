@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f8fafc">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="차계부">
@@ -21,20 +20,7 @@
   --accent: #2563eb;
   --accent-ink: #ffffff;
   --danger: #ef4444;
-  --input-bg: #f1f5f9;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f172a;
-    --surface: #1e293b;
-    --ink: #f8fafc;
-    --sub: #94a3b8;
-    --line: #334155;
-    --accent: #3b82f6;
-    --accent-ink: #ffffff;
-    --danger: #f87171;
-    --input-bg: #0f172a;
-  }
+  --input-bg: #f8fafc;
 }
 * { box-sizing: border-box; }
 body {
@@ -55,12 +41,16 @@ section {
   margin-bottom: 16px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
-label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 500; color: var(--sub); }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 480px) {
+  .grid { grid-template-columns: 1fr 1fr; }
+}
+label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 500; color: var(--sub); min-width: 0; }
 input, select, button { font: inherit; color: inherit; }
 input, select {
   width: 100%;
-  padding: 10px 12px;
+  height: 44px;
+  padding: 0 12px;
   font-size: 15px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -70,14 +60,15 @@ input, select {
   -webkit-appearance: none;
 }
 select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 16px;
   padding-right: 32px;
 }
 button {
-  padding: 10px 16px;
+  height: 44px;
+  padding: 0 16px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
@@ -87,7 +78,7 @@ button {
 }
 button:active { opacity: 0.8; }
 button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-button.link { border: 0; background: none; color: var(--accent); padding: 6px 8px; font-weight: 500; }
+button.link { height: auto; border: 0; background: none; color: var(--accent); padding: 6px 8px; font-weight: 500; }
 button.link.del { color: var(--danger); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
@@ -158,8 +149,10 @@ dialog img { display: block; max-width: 100%; max-height: 75vh; margin: 0 auto; 
     <label id="partWrap">정비 항목<select id="part"></select></label>
     <label>금액(원)<input type="number" id="amount" min="0" inputmode="numeric"></label>
     <label>주행거리(km)<input type="number" id="odo" min="0" inputmode="numeric"></label>
-    <label id="litersWrap"><span id="litersLbl">주유량(L)</span><input type="number" id="liters" min="0" step="0.01" inputmode="decimal"></label>
     <label>메모<input type="text" id="memo" maxlength="60"></label>
+  </div>
+  <div id="litersWrap" style="margin-top:12px;">
+    <label><span id="litersLbl">주유량(L)</span><input type="number" id="liters" min="0" step="0.01" inputmode="decimal"></label>
   </div>
   <div id="imgWrap">
     <label>영수증 사진<input type="file" id="img" accept="image/*"></label>
@@ -180,7 +173,7 @@ dialog img { display: block; max-width: 100%; max-height: 75vh; margin: 0 auto; 
   <div class="row">
     <h2>요약</h2>
     <label style="display:flex;align-items:center;gap:6px;flex-direction:row">기간
-      <select id="period" style="width:auto;margin:0;padding:6px 28px 6px 10px"></select>
+      <select id="period" style="width:auto;margin:0;padding:6px 28px 6px 10px;height:38px"></select>
     </label>
   </div>
   <div class="stats" id="stats"></div>
