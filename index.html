@@ -2,9 +2,9 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#eef0ee" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#14181b" media="(prefers-color-scheme: dark)">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="차계부">
@@ -12,56 +12,120 @@
 <link rel="apple-touch-icon" href="icon.png">
 <title>차계부</title>
 <style>
-:root{--bg:#eef0ee;--surface:#fff;--ink:#1d2428;--sub:#5d6b73;--line:#d5dad8;--accent:#0b57d0;--accent-ink:#fff;--danger:#b3261e}
-@media (prefers-color-scheme:dark){:root{--bg:#14181b;--surface:#1d2327;--ink:#e8ecee;--sub:#9aa7ae;--line:#2f383d;--accent:#7aa7ff;--accent-ink:#0b1b3a;--danger:#ff8a80}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif}
-main{max-width:880px;margin:0 auto;padding:20px 16px 48px}
-h1{font-size:22px;margin:0 0 16px}
-h2{font-size:16px;margin:0 0 12px}
-section{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-label{display:block;font-size:13px;color:var(--sub)}
-input,select,button{font:inherit;color:inherit}
-input,select{width:100%;margin-top:3px;padding:10px;font-size:16px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
-button{padding:11px 16px;border:1px solid var(--line);border-radius:6px;background:var(--surface);cursor:pointer}
-button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-button.link{border:0;background:none;color:var(--accent);padding:8px 10px}
-button.link.del{color:var(--danger)}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-input:disabled,select:disabled{opacity:1;color:var(--ink);-webkit-text-fill-color:var(--ink);background:transparent;border-color:transparent;padding-left:0;cursor:default;appearance:none;-webkit-appearance:none}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px}
-.stat{padding:10px;border:1px solid var(--line);border-radius:8px}
-.stat b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
-.stat span{font-size:13px;color:var(--sub)}
-.bar{display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0}
-.bar i{display:block;height:8px;background:var(--accent);border-radius:4px}
-.bar em{font-style:normal;min-width:48px;color:var(--sub)}
-.scroll{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
-th{font-size:13px;color:var(--sub);font-weight:600}
-td.n,th.n{text-align:right}
-.empty{color:var(--sub);padding:12px 0}
-.row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.hint{font-size:12px;color:var(--sub);margin:8px 0 0}
-summary{cursor:pointer;font-weight:600;font-size:16px}
-details .grid{margin-top:12px}
-.item{padding:12px 0;border-bottom:1px solid var(--line)}
-.item:last-child{border-bottom:0}
-.item .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-.item .top b{font-size:16px}
-.item .top strong{font-size:16px;font-variant-numeric:tabular-nums}
-.item .d{margin-left:8px;font-size:13px;color:var(--sub)}
-.item .sub{font-size:13px;color:var(--sub);margin-top:2px}
-.item .sub span{margin-right:12px}
-.item .btns{display:flex;gap:2px;margin-top:4px;margin-left:-10px}
-#imgWrap{margin-top:10px}
-#imgPrev{margin-top:8px}
-#imgPrev img{display:block;max-height:140px;max-width:100%;border-radius:6px;border:1px solid var(--line);margin-bottom:4px}
-dialog{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--surface);color:var(--ink);max-width:92vw}
-dialog img{display:block;max-width:100%;max-height:78vh;margin:0 auto}
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --ink: #0f172a;
+  --sub: #64748b;
+  --line: #e2e8f0;
+  --accent: #2563eb;
+  --accent-ink: #ffffff;
+  --danger: #ef4444;
+  --input-bg: #f1f5f9;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --ink: #f8fafc;
+    --sub: #94a3b8;
+    --line: #334155;
+    --accent: #3b82f6;
+    --accent-ink: #ffffff;
+    --danger: #f87171;
+    --input-bg: #0f172a;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Segoe UI", sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+main { max-width: 800px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 24px; font-weight: 700; margin: 0 0 20px; letter-spacing: -0.5px; }
+h2 { font-size: 17px; font-weight: 600; margin: 0 0 14px; letter-spacing: -0.3px; }
+section {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 500; color: var(--sub); }
+input, select, button { font: inherit; color: inherit; }
+input, select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 15px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--ink);
+  appearance: none;
+  -webkit-appearance: none;
+}
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  padding-right: 32px;
+}
+button {
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+button:active { opacity: 0.8; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.link { border: 0; background: none; color: var(--accent); padding: 6px 8px; font-weight: 500; }
+button.link.del { color: var(--danger); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+input:disabled, select:disabled {
+  opacity: 1;
+  color: var(--ink);
+  -webkit-text-fill-color: var(--ink);
+  background: transparent;
+  border-color: transparent;
+  padding-left: 0;
+  cursor: default;
+}
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+.stat { padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--input-bg); }
+.stat b { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--sub); }
+.bar { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 6px 0; }
+.bar i { display: block; height: 8px; background: var(--accent); border-radius: 4px; }
+.bar em { font-style: normal; min-width: 52px; color: var(--sub); }
+.empty { color: var(--sub); padding: 16px 0; text-align: center; font-size: 14px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.hint { font-size: 12px; color: var(--sub); margin: 8px 0 0; line-height: 1.4; }
+summary { cursor: pointer; font-weight: 600; font-size: 16px; user-select: none; }
+details .grid { margin-top: 12px; }
+.item { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.item:last-child { border-bottom: 0; }
+.item .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.item .top b { font-size: 15px; font-weight: 600; }
+.item .top strong { font-size: 16px; font-variant-numeric: tabular-nums; }
+.item .d { margin-left: 8px; font-size: 12px; color: var(--sub); font-weight: normal; }
+.item .sub { font-size: 13px; color: var(--sub); margin-top: 4px; }
+.item .sub span { margin-right: 12px; }
+.item .btns { display: flex; gap: 4px; margin-top: 6px; margin-left: -8px; }
+#imgWrap { margin-top: 12px; }
+#imgPrev { margin-top: 8px; }
+#imgPrev img { display: block; max-height: 140px; max-width: 100%; border-radius: 6px; border: 1px solid var(--line); margin-bottom: 4px; }
+dialog { border: 1px solid var(--line); border-radius: 12px; padding: 16px; background: var(--surface); color: var(--ink); max-width: 92vw; }
+dialog img { display: block; max-width: 100%; max-height: 75vh; margin: 0 auto; border-radius: 6px; }
 </style>
 </head>
 <body>
@@ -115,8 +179,8 @@ dialog img{display:block;max-width:100%;max-height:78vh;margin:0 auto}
 <section>
   <div class="row">
     <h2>요약</h2>
-    <label style="display:flex;align-items:center;gap:6px">기간
-      <select id="period" style="width:auto;margin:0"></select>
+    <label style="display:flex;align-items:center;gap:6px;flex-direction:row">기간
+      <select id="period" style="width:auto;margin:0;padding:6px 28px 6px 10px"></select>
     </label>
   </div>
   <div class="stats" id="stats"></div>
@@ -137,7 +201,7 @@ dialog img{display:block;max-width:100%;max-height:78vh;margin:0 auto}
     <button id="importBtn">JSON 불러오기</button>
     <input type="file" id="importFile" accept="application/json" hidden>
   </div>
-  <p class="hint">데이터는 이 브라우저에만 저장됩니다. 브라우저 데이터를 지우거나 기기를 바꾸기 전에 내보내기로 백업하세요. JSON 백업에는 영수증 사진도 포함되어 파일이 커질 수 있고, 차량번호와 영수증 정보가 들어 있으니 깃 저장소에는 올리지 마세요.</p>
+  <p class="hint">데이터는 이 브라우저에만 저장됩니다. 브라우저 데이터를 지우거나 기기를 바꾸기 전에 내보내기로 백업하세요.</p>
 </section>
 </main>
 
@@ -148,7 +212,6 @@ dialog img{display:block;max-width:100%;max-height:78vh;margin:0 auto}
 
 <script>
 (function(){
-  // 저장소 키: 다른 사람이 같은 주소로 열어도 각자의 브라우저에 따로 저장됩니다.
   var KEY = 'carLedger.v1';
   var CATS = ['정비','보험','세금','기타'];
   var $ = function(id){ return document.getElementById(id); };
@@ -166,7 +229,6 @@ dialog img{display:block;max-width:100%;max-height:78vh;margin:0 auto}
   var today = function(){ var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
   var esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
 
-  // 영수증 사진: IndexedDB에 압축해서 저장 (localStorage 용량 한계를 피함)
   var db = null, pendingImg = null, imgRemoved = false;
   function openDB(){
     try {
@@ -219,7 +281,6 @@ dialog img{display:block;max-width:100%;max-height:78vh;margin:0 auto}
   openDB();
   try { if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
 
-  // 차량 종류별 연료 표기와 정비 항목
   var VKEY = KEY + '.vehicle';
   var COMMON = ['타이어 교체','타이어 위치교환','휠 얼라인먼트','브레이크 패드·라이닝','브레이크액','와이퍼','에어컨(캐빈) 필터','냉각수','12V 배터리'];
   var VEHICLES = {
@@ -270,7 +331,6 @@ dialog img{display:block;max-width:100%;max-height:78vh;margin:0 auto}
   $('date').value = today();
   $('cat').addEventListener('change', toggleLiters);
 
-  // 차량 기본 정보 (차종, 차량번호, 출고 년월)
   var IKEY = KEY + '.vehicleInfo', IFIELDS = ['model','plate','bought'];
   var info = (function(){
     try { var v = JSON.parse(localStorage.getItem(IKEY) || '{}'); return v && typeof v === 'object' ? v : {}; }
@@ -357,14 +417,12 @@ dialog img{display:block;max-width:100%;max-height:78vh;margin:0 auto}
   function render(){
     var sorted = items.slice().sort(function(a,b){ return b.date.localeCompare(a.date) || (b.odo||0) - (a.odo||0); });
 
-    // 기간 선택
     var cur = $('period').value || 'all';
     $('period').innerHTML = '<option value="all">전체</option>' + periods().map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
     $('period').value = Array.prototype.some.call($('period').options, function(o){ return o.value === cur; }) ? cur : 'all';
     var sel = $('period').value;
     var scope = items.filter(function(x){ return sel === 'all' || x.date.slice(0,7) === sel; });
 
-    // 요약
     var total = scope.reduce(function(s,x){ return s + x.amount; }, 0);
     var odos = scope.map(function(x){ return x.odo; }).filter(Boolean);
     var dist = odos.length > 1 ? Math.max.apply(null, odos) - Math.min.apply(null, odos) : null;
@@ -374,7 +432,6 @@ dialog img{display:block;max-width:100%;max-height:78vh;margin:0 auto}
       [dist && total ? won(total / dist) + '/km' : '-', 'km당 비용']
     ].map(function(s){ return '<div class="stat"><b>'+s[0]+'</b><span>'+s[1]+'</span></div>'; }).join('');
 
-    // 항목별 막대
     var by = {};
     scope.forEach(function(x){ by[x.cat] = (by[x.cat]||0) + x.amount; });
     var max = Math.max.apply(null, Object.keys(by).map(function(k){ return by[k]; }).concat(1));
@@ -382,7 +439,6 @@ dialog img{display:block;max-width:100%;max-height:78vh;margin:0 auto}
       return '<div class="bar"><em>'+esc(catName(k))+'</em><i style="width:'+Math.max(2, by[k]/max*60)+'%"></i><span>'+won(by[k])+'</span></div>';
     }).join('');
 
-    // 내역
     $('empty').hidden = sorted.length > 0;
     $('rows').innerHTML = sorted.map(function(x){
       var sub = [x.odo ? x.odo.toLocaleString('ko-KR') + ' km' : '', x.liters ? x.liters + ' ' + V().unit : '', x.memo]
@@ -420,7 +476,6 @@ dialog img{display:block;max-width:100%;max-height:78vh;margin:0 auto}
     }
   });
 
-  // 백업
   function download(name, text, type){
     var a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([text], {type:type}));
