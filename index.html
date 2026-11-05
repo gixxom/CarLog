@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<!-- user-scalable=no와 maximum-scale=1을 추가하여 모바일 터치 시 강제 확대 원천 차단 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
@@ -36,7 +37,7 @@
     --input-bg: #0f172a;
   }
 }
-* { box-sizing: border-box; }
+* { box-sizing: border-box; touch-action: manipulation; }
 body {
   margin: 0;
   background: var(--bg);
@@ -118,7 +119,6 @@ button.primary { background: var(--accent); color: var(--accent-ink); border-col
 button.link { height: auto; border: 0; background: none; color: var(--accent); padding: 6px 8px; font-weight: 500; }
 button.link.del { color: var(--danger); }
 
-/* 기록 추가/수정 섹션 하단 버튼들을 사진 칸 너비와 맞추기 위한 스타일 */
 #formActions {
   display: flex;
   gap: 8px;
@@ -272,4 +272,339 @@ dialog img { display: block; max-width: 100%; max-height: 75vh; margin: 0 auto; 
 <script>
 (function(){
   var KEY = 'carLedger.v1';
-  var CATS = ['정비','보험','세금','기
+  var CATS = ['정비','보험','세금','기타'];
+  var $ = function(id){ return document.getElementById(id); };
+  var items = load(), editId = null;
+
+  function load(){
+    try { var v = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(v) ? v : []; }
+    catch(e){ return []; }
+  }
+  function persist(){
+    try { localStorage.setItem(KEY, JSON.stringify(items)); }
+    catch(e){ alert('저장하지 못했습니다. 브라우저의 저장 공간 설정을 확인하세요.'); }
+  }
+  var won = function(n){ return Math.round(n).toLocaleString('ko-KR') + '원'; };
+  var today = function(){ var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+  var esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+
+  function formatNum(v){
+    var num = String(v).replace(/[^0-9]/g, '');
+    if(!num) return '';
+    return Number(num).toLocaleString('ko-KR');
+  }
+  function parseNum(v){
+    if(!v) return 0;
+    var num = String(v).replace(/[^0-9]/g, '');
+    return num ? Number(num) : 0;
+  }
+
+  ['amount', 'odo', 'liters'].forEach(function(id){
+    var el = $(id);
+    if(!el) return;
+    el.addEventListener('input', function(e){
+      var raw = el.value;
+      var formatted = id === 'liters' ? raw : formatNum(raw);
+      el.value = formatted;
+    });
+  });
+
+  var db = null, pendingImg = null, imgRemoved = false;
+  function openDB(){
+    try {
+      var r = indexedDB.open(KEY + '.img', 1);
+      r.onupgradeneeded = function(){ r.result.createObjectStore('r'); };
+      r.onsuccess = function(){ db = r.result; };
+    } catch(e){}
+  }
+  function idbPut(k, v, done){
+    if(!db) return done(false);
+    try { var t = db.transaction('r','readwrite'); t.objectStore('r').put(v, k);
+      t.oncomplete = function(){ done(true); }; t.onerror = function(){ done(false); }; }
+    catch(e){ done(false); }
+  }
+  function idbGet(k, done){
+    if(!db) return done(null);
+    try { var q = db.transaction('r').objectStore('r').get(k);
+      q.onsuccess = function(){ done(q.result || null); }; q.onerror = function(){ done(null); }; }
+    catch(e){ done(null); }
+  }
+  function idbDel(k){ if(db){ try { db.transaction('r','readwrite').objectStore('r').delete(k); } catch(e){} } }
+  function compress(file, done){
+    var rd = new FileReader();
+    rd.onload = function(){
+      var im = new Image();
+      im.onload = function(){
+        var sc = Math.min(1, 1280 / Math.max(im.width, im.height));
+        var c = document.createElement('canvas');
+        c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        done(c.toDataURL('image/jpeg', 0.75));
+      };
+      im.onerror = function(){ done(null); };
+      im.src = rd.result;
+    };
+    rd.onerror = function(){ done(null); };
+    rd.readAsDataURL(file);
+  }
+  function showPrev(d){ $('imgThumb').src = d; $('imgPrev').hidden = false; }
+  function hidePrev(){ $('imgPrev').hidden = true; $('imgThumb').removeAttribute('src'); }
+  $('img').addEventListener('change', function(e){
+    var f = e.target.files[0]; if(!f) return;
+    compress(f, function(d){
+      if(!d){ alert('이미지를 읽지 못했습니다. 다른 사진으로 시도하세요.'); e.target.value = ''; return; }
+      pendingImg = d; imgRemoved = false; showPrev(d);
+    });
+  });
+  $('imgRemove').addEventListener('click', function(){ pendingImg = null; imgRemoved = true; $('img').value = ''; hidePrev(); });
+  $('viewerClose').addEventListener('click', function(){ $('viewer').close(); });
+  openDB();
+  try { if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch(e){}
+
+  var VKEY = KEY + '.vehicle';
+  var COMMON = ['타이어 교체','타이어 위치교환','휠 얼라인먼트','브레이크 패드·라이닝','브레이크액','와이퍼','에어컨(캐빈) 필터','냉각수','12V 배터리'];
+  var VEHICLES = {
+    '가솔린': {fuel:'주유량', unit:'L',   parts:['엔진오일·오일필터','에어클리너','점화플러그','연료필터','미션오일'].concat(COMMON)},
+    '디젤':   {fuel:'주유량', unit:'L',   parts:['엔진오일·오일필터','에어클리너','연료필터','요소수(애드블루)','DPF·EGR 점검','미션오일'].concat(COMMON)},
+    'LPG':    {fuel:'주유량', unit:'L',   parts:['엔진오일·오일필터','에어클리너','점화플러그','LPG 필터','미션오일'].concat(COMMON)},
+    '하이브리드': {fuel:'주유량', unit:'L', parts:['엔진오일·오일필터','에어클리너','점화플러그','미션·감속기오일','하이브리드 배터리 점검','인버터 냉각수'].concat(COMMON)},
+    '전기':   {fuel:'충전량', unit:'kWh', parts:['감속기오일','배터리·모터 냉각수','고전압 배터리 점검'].concat(COMMON.filter(function(x){ return x !== '냉각수'; }))}
+  };
+  var vtype = (function(){ try { var v = localStorage.getItem(VKEY); return VEHICLES[v] ? v : '가솔린'; } catch(e){ return '가솔린'; } })();
+  var V = function(){ return VEHICLES[vtype]; };
+  var catName = function(c){ return c === '주유' ? V().fuel : c === '보험' ? '보험료' : c === '세금' ? '자동차세' : c; };
+  var rowLabel = function(x){ return x.cat === '정비' && x.part ? '정비 · ' + x.part : catName(x.cat); };
+
+  function setOptions(sel, list, label){
+    var cur = sel.value;
+    sel.innerHTML = list.map(function(c){ return '<option value="'+esc(c)+'">'+esc(label ? label(c) : c)+'</option>'; }).join('');
+    if(list.indexOf(cur) >= 0) sel.value = cur;
+  }
+  function setPart(p){
+    var sel = $('part');
+    if(p && V().parts.concat(['기타 정비']).indexOf(p) < 0){
+      var o = document.createElement('option'); o.value = o.textContent = p; sel.appendChild(o);
+    }
+    if(p) sel.value = p;
+  }
+  function toggleLiters(){
+    $('litersWrap').style.display = $('cat').value === '주유' ? '' : 'none';
+    $('partWrap').style.display = $('cat').value === '정비' ? '' : 'none';
+    $('imgWrap').style.display = $('cat').value === '정비' ? '' : 'none';
+  }
+  function applyVehicle(){
+    setOptions($('cat'), CATS, catName);
+    setOptions($('part'), V().parts.concat(['기타 정비']));
+    $('litersLbl').textContent = V().fuel;
+    $('litersUnit').textContent = V().unit;
+    $('vhint').textContent = vtype === '전기'
+      ? '전기차는 엔진오일·점화플러그 등이 없어 해당 정비 항목을 뺐습니다.'
+      : '정비를 고르면 ' + vtype + ' 차량에 맞는 정비 항목이 나타납니다.';
+    toggleLiters();
+  }
+  $('vtype').innerHTML = Object.keys(VEHICLES).map(function(k){ return '<option>'+k+'</option>'; }).join('');
+  $('vtype').value = vtype;
+  $('vtype').addEventListener('change', function(){
+    vtype = $('vtype').value;
+    try { localStorage.setItem(VKEY, vtype); } catch(e){}
+    applyVehicle(); render();
+  });
+  $('date').value = today();
+  $('cat').addEventListener('change', toggleLiters);
+
+  var IKEY = KEY + '.vehicleInfo', IFIELDS = ['model','plate','bought'];
+  var info = (function(){
+    try { var v = JSON.parse(localStorage.getItem(IKEY) || '{}'); return v && typeof v === 'object' ? v : {}; }
+    catch(e){ return {}; }
+  })();
+  function updateSum(){
+    var t = [info.model, info.plate].filter(Boolean).join(' ');
+    $('vsum').textContent = t ? '차량 ' + t : '차량 정보';
+  }
+  function fillInfo(){ IFIELDS.forEach(function(f){ $('v'+f).value = info[f] || ''; }); updateSum(); }
+  function saveInfo(){ try { localStorage.setItem(IKEY, JSON.stringify(info)); } catch(e){} }
+  var savedType = vtype;
+  var locked = info.locked !== undefined ? !!info.locked : !!(info.model || info.plate || info.bought);
+  info.locked = locked;
+  function setLocked(v){
+    locked = v;
+    $('vdet').open = !v;
+    IFIELDS.map(function(f){ return $('v'+f); }).concat([$('vtype')]).forEach(function(el){ el.disabled = v; });
+    $('vedit').hidden = !v;
+    $('vsave').hidden = v;
+    $('vcancel').hidden = v || !info.locked;
+  }
+  $('vedit').addEventListener('click', function(){ setLocked(false); });
+  $('vsave').addEventListener('click', function(){
+    IFIELDS.forEach(function(f){ info[f] = $('v'+f).value.trim(); });
+    info.locked = true; savedType = vtype; saveInfo(); updateSum();
+    try { localStorage.setItem(VKEY, vtype); } catch(e){}
+    setLocked(true);
+  });
+  $('vcancel').addEventListener('click', function(){
+    fillInfo(); vtype = savedType; $('vtype').value = vtype;
+    try { localStorage.setItem(VKEY, vtype); } catch(e){}
+    applyVehicle(); render(); setLocked(true);
+  });
+  fillInfo();
+  setLocked(locked);
+
+  function resetForm(){
+    editId = null;
+    ['amount','odo','liters','memo'].forEach(function(id){ $(id).value = ''; });
+    $('date').value = today(); $('cat').value = CATS[0]; toggleLiters();
+    pendingImg = null; imgRemoved = false; $('img').value = ''; hidePrev();
+    $('formTitle').textContent = '기록 추가'; $('cancel').hidden = true;
+  }
+
+  $('save').addEventListener('click', function(){
+    var amount = parseNum($('amount').value);
+    if(!$('date').value){ alert('날짜를 입력하세요.'); return; }
+    if(isNaN(amount) || amount <= 0){ alert('금액을 입력하세요.'); return; }
+    var rec = {
+      id: editId || String(Date.now()) + Math.random().toString(36).slice(2,6),
+      date: $('date').value, cat: $('cat').value, amount: amount,
+      odo: parseNum($('odo').value) || null,
+      liters: $('cat').value === '주유' ? (parseFloat($('liters').value) || null) : null,
+      part: $('cat').value === '정비' ? $('part').value : '',
+      memo: $('memo').value.trim()
+    };
+    var prev = editId ? items.filter(function(x){ return x.id === editId; })[0] : null;
+    var hadImg = !!(prev && prev.img), isRepair = rec.cat === '정비';
+    rec.img = isRepair && (!!pendingImg || (hadImg && !imgRemoved));
+    function commit(){
+      if(editId){ items = items.map(function(x){ return x.id === editId ? rec : x; }); }
+      else { items.push(rec); }
+      persist(); resetForm(); render();
+    }
+    if(rec.img && pendingImg){
+      idbPut(rec.id, pendingImg, function(ok){
+        if(!ok){ alert('사진을 저장하지 못했습니다. 사진 없이 기록만 저장합니다.'); rec.img = hadImg && !imgRemoved; }
+        commit();
+      });
+    } else {
+      if(hadImg && !rec.img) idbDel(rec.id);
+      commit();
+    }
+  });
+  $('cancel').addEventListener('click', resetForm);
+
+  function periods(){
+    var set = {};
+    items.forEach(function(x){ set[x.date.slice(0,7)] = 1; });
+    return Object.keys(set).sort().reverse();
+  }
+
+  function render(){
+    var sorted = items.slice().sort(function(a,b){ return b.date.localeCompare(a.date) || (b.odo||0) - (a.odo||0); });
+
+    var cur = $('period').value || 'all';
+    $('period').innerHTML = '<option value="all">전체</option>' + periods().map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
+    $('period').value = Array.prototype.some.call($('period').options, function(o){ return o.value === cur; }) ? cur : 'all';
+    var sel = $('period').value;
+    var scope = items.filter(function(x){ return sel === 'all' || x.date.slice(0,7) === sel; });
+
+    var total = scope.reduce(function(s,x){ return s + x.amount; }, 0);
+    var odos = scope.map(function(x){ return x.odo; }).filter(Boolean);
+    var dist = odos.length > 1 ? Math.max.apply(null, odos) - Math.min.apply(null, odos) : null;
+    $('stats').innerHTML = [
+      [won(total), '총 지출'],
+      [dist ? dist.toLocaleString('ko-KR') + ' km' : '-', '기간 내 주행'],
+      [dist && total ? won(total / dist) + '/km' : '-', 'km당 비용']
+    ].map(function(s){ return '<div class="stat"><b>'+s[0]+'</b><span>'+s[1]+'</span></div>'; }).join('');
+
+    var by = {};
+    scope.forEach(function(x){ by[x.cat] = (by[x.cat]||0) + x.amount; });
+    var max = Math.max.apply(null, Object.keys(by).map(function(k){ return by[k]; }).concat(1));
+    $('bars').innerHTML = Object.keys(by).sort(function(a,b){ return by[b] - by[a]; }).map(function(k){
+      return '<div class="bar"><em>'+esc(catName(k))+'</em><i style="width:'+Math.max(2, by[k]/max*60)+'%"></i><span>'+won(by[k])+'</span></div>';
+    }).join('');
+
+    $('empty').hidden = sorted.length > 0;
+    $('rows').innerHTML = sorted.map(function(x){
+      var sub = [x.odo ? x.odo.toLocaleString('ko-KR') + ' km' : '', x.liters ? x.liters + ' ' + V().unit : '', x.memo]
+        .filter(Boolean).map(function(v){ return '<span>' + esc(v) + '</span>'; }).join('');
+      return '<div class="item"><div class="top"><div><b>' + esc(rowLabel(x)) + '</b><span class="d">' + x.date + '</span></div><strong>' + won(x.amount) + '</strong></div>'
+        + (sub ? '<div class="sub">' + sub + '</div>' : '')
+        + '<div class="btns">' + (x.img ? '<button class="link" data-img="' + x.id + '">영수증</button>' : '')
+        + '<button class="link" data-edit="' + x.id + '">수정</button><button class="link del" data-del="' + x.id + '">삭제</button></div></div>';
+    }).join('');
+  }
+
+  $('period').addEventListener('change', render);
+  $('rows').addEventListener('click', function(e){
+    var ed = e.target.getAttribute('data-edit'), dl = e.target.getAttribute('data-del'), im = e.target.getAttribute('data-img');
+    if(im){
+      idbGet(im, function(d){
+        if(!d){ alert('저장된 영수증 사진을 찾을 수 없습니다.'); return; }
+        $('viewerImg').src = d;
+        if($('viewer').showModal) $('viewer').showModal(); else $('viewer').setAttribute('open','');
+      });
+      return;
+    }
+    if(dl && confirm('이 기록을 삭제할까요?')){ items = items.filter(function(x){ return x.id !== dl; }); idbDel(dl); persist(); render(); }
+    if(ed){
+      var x = items.filter(function(i){ return i.id === ed; })[0]; if(!x) return;
+      editId = x.id; $('date').value = x.date;
+      if(CATS.indexOf(x.cat) < 0){ var oc = document.createElement('option'); oc.value = x.cat; oc.textContent = catName(x.cat); $('cat').appendChild(oc); }
+      $('cat').value = x.cat; $('amount').value = x.amount ? x.amount.toLocaleString('ko-KR') : '';
+      $('odo').value = x.odo ? x.odo.toLocaleString('ko-KR') : ''; 
+      $('liters').value = x.liters || ''; $('memo').value = x.memo;
+      toggleLiters(); setPart(x.part);
+      pendingImg = null; imgRemoved = false; $('img').value = ''; hidePrev();
+      if(x.img) idbGet(x.id, function(d){ if(d) showPrev(d); });
+      $('formTitle').textContent = '기록 수정'; $('cancel').hidden = false;
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+  });
+
+  function download(name, text, type){
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], {type:type}));
+    a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  }
+  $('exportJson').addEventListener('click', function(){
+    var receipts = {}, ids = items.filter(function(x){ return x.img; }).map(function(x){ return x.id; }), n = ids.length;
+    function fin(){
+      download('carledger-' + today() + '.json', JSON.stringify({version:1, vehicle:vtype, info:info, items:items, receipts:receipts}, null, 2), 'application/json');
+    }
+    if(!n){ fin(); return; }
+    ids.forEach(function(id){ idbGet(id, function(d){ if(d) receipts[id] = d; if(--n === 0) fin(); }); });
+  });
+  $('exportCsv').addEventListener('click', function(){
+    var head = ['날짜','항목','정비항목','금액','주행거리','주유·충전량','메모'];
+    var q = function(v){ return '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"'; };
+    var lines = items.slice().sort(function(a,b){ return a.date.localeCompare(b.date); })
+      .map(function(x){ return [x.date,x.cat,x.part,x.amount,x.odo,x.liters,x.memo].map(q).join(','); });
+    download('carledger-' + today() + '.csv', '\ufeff' + [head.join(',')].concat(lines).join('\n'), 'text/csv');
+  });
+  $('importBtn').addEventListener('click', function(){ $('importFile').click(); });
+  $('importFile').addEventListener('change', function(e){
+    var f = e.target.files[0]; if(!f) return;
+    var r = new FileReader();
+    r.onload = function(){
+      try {
+        var raw = JSON.parse(r.result), data = Array.isArray(raw) ? raw : raw.items;
+        if(!Array.isArray(data)) throw new Error();
+        data = data.filter(function(x){ return x && x.date && x.cat && typeof x.amount === 'number'; });
+        if(!confirm(data.length + '건을 불러옵니다. 현재 기록은 모두 대체됩니다. 계속할까요?')) return;
+        var rc = (raw && raw.receipts && typeof raw.receipts === 'object') ? raw.receipts : {};
+        items = data.map(function(x, i){ x.id = x.id || String(Date.now()) + i; x.img = !!rc[x.id]; return x; });
+        if(db){ try { db.transaction('r','readwrite').objectStore('r').clear(); } catch(err){} }
+        Object.keys(rc).forEach(function(k){ idbPut(k, rc[k], function(){}); });
+        if(raw && raw.info && typeof raw.info === 'object'){
+          info = {}; IFIELDS.forEach(function(f){ info[f] = String(raw.info[f] || ''); }); info.locked = true; fillInfo(); saveInfo(); setLocked(true);
+        }
+        if(raw && VEHICLES[raw.vehicle]){ vtype = raw.vehicle; savedType = vtype; $('vtype').value = vtype; try { localStorage.setItem(VKEY, vtype); } catch(e){} applyVehicle(); }
+        persist(); render();
+      } catch(err){ alert('올바른 차계부 JSON 파일이 아닙니다.'); }
+      e.target.value = '';
+    };
+    r.readAsText(f);
+  });
+
+  applyVehicle(); render();
+})();
+</script>
+</body>
+</html>
