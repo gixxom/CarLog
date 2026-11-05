@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- viewport에 maximum-scale=1을 추가하여 모바일 터치 시 화면 강제 확대 방지 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
@@ -65,7 +66,7 @@ input, select {
   width: 100%;
   height: 44px;
   padding: 0 12px;
-  font-size: 15px;
+  font-size: 16px; /* 모바일 사파리 등에서 16px 미만일 때 확대되는 현상 방지 */
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--input-bg);
@@ -80,7 +81,6 @@ select {
   background-size: 16px;
   padding-right: 32px;
 }
-/* 영수증 파일 업로드 칸 전용 스타일 (높이 자동 및 내부 수직 중앙 정렬) */
 #img {
   height: auto;
   padding: 8px 12px;
@@ -150,7 +150,7 @@ dialog img { display: block; max-width: 100%; max-height: 75vh; margin: 0 auto; 
   <div class="grid">
     <label>차종<input type="text" id="vmodel" maxlength="40" placeholder="예: 아반떼 CN7"></label>
     <label>차량번호<input type="text" id="vplate" maxlength="12" placeholder="예: 12가3456"></label>
-    <label>출고 년월<input type="month" id="vbought" placeholder="2024-03"></label>
+    <label>출고 년월<input type="month" id="vbought"></label>
     <label>차량 종류<select id="vtype"></select></label>
   </div>
   <div class="actions">
@@ -168,12 +168,12 @@ dialog img { display: block; max-width: 100%; max-height: 75vh; margin: 0 auto; 
     <label>날짜<input type="date" id="date"></label>
     <label>항목<select id="cat"></select></label>
     <label id="partWrap">정비 항목<select id="part"></select></label>
-    <label>금액(원)<input type="number" id="amount" min="0" inputmode="numeric"></label>
-    <label>주행거리(km)<input type="number" id="odo" min="0" inputmode="numeric"></label>
-    <label>메모<input type="text" id="memo" maxlength="60"></label>
+    <label>금액<input type="text" id="amount" placeholder="0 원" inputmode="numeric"></label>
+    <label>주행거리<input type="text" id="odo" placeholder="0 km" inputmode="numeric"></label>
+    <label>메모<input type="text" id="memo" maxlength="60" placeholder="내용 입력"></label>
   </div>
   <div id="litersWrap" style="margin-top:12px;">
-    <label><span id="litersLbl">주유량(L)</span><input type="number" id="liters" min="0" step="0.01" inputmode="decimal"></label>
+    <label><span id="litersLbl">주유량</span><input type="text" id="liters" placeholder="0 L" inputmode="decimal"></label>
   </div>
   <div id="imgWrap">
     <label>영수증 사진<input type="file" id="img" accept="image/*"></label>
@@ -243,6 +243,30 @@ dialog img { display: block; max-width: 100%; max-height: 75vh; margin: 0 auto; 
   var today = function(){ var d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
   var esc = function(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
 
+  // 숫자 포맷팅 함수 (콤마 추가 및 단위 결합)
+  function formatNum(v){
+    var num = String(v).replace(/[^0-9]/g, '');
+    if(!num) return '';
+    return Number(num).toLocaleString('ko-KR');
+  }
+  function parseNum(v){
+    if(!v) return 0;
+    var num = String(v).replace(/[^0-9]/g, '');
+    return num ? Number(num) : 0;
+  }
+
+  // 실시간 콤마 입력 이벤트 바인딩
+  ['amount', 'odo', 'liters'].forEach(function(id){
+    var el = $(id);
+    if(!el) return;
+    el.addEventListener('input', function(e){
+      var pos = el.selectionStart;
+      var raw = el.value;
+      var formatted = id === 'liters' ? raw : formatNum(raw);
+      el.value = formatted;
+    });
+  });
+
   var db = null, pendingImg = null, imgRemoved = false;
   function openDB(){
     try {
@@ -298,11 +322,11 @@ dialog img { display: block; max-width: 100%; max-height: 75vh; margin: 0 auto; 
   var VKEY = KEY + '.vehicle';
   var COMMON = ['타이어 교체','타이어 위치교환','휠 얼라인먼트','브레이크 패드·라이닝','브레이크액','와이퍼','에어컨(캐빈) 필터','냉각수','12V 배터리'];
   var VEHICLES = {
-    '가솔린': {fuel:'주유', unit:'L',   parts:['엔진오일·오일필터','에어클리너','점화플러그','연료필터','미션오일'].concat(COMMON)},
-    '디젤':   {fuel:'주유', unit:'L',   parts:['엔진오일·오일필터','에어클리너','연료필터','요소수(애드블루)','DPF·EGR 점검','미션오일'].concat(COMMON)},
-    'LPG':    {fuel:'주유', unit:'L',   parts:['엔진오일·오일필터','에어클리너','점화플러그','LPG 필터','미션오일'].concat(COMMON)},
-    '하이브리드': {fuel:'주유', unit:'L', parts:['엔진오일·오일필터','에어클리너','점화플러그','미션·감속기오일','하이브리드 배터리 점검','인버터 냉각수'].concat(COMMON)},
-    '전기':   {fuel:'충전', unit:'kWh', parts:['감속기오일','배터리·모터 냉각수','고전압 배터리 점검'].concat(COMMON.filter(function(x){ return x !== '냉각수'; }))}
+    '가솔린': {fuel:'주유량', unit:'L',   parts:['엔진오일·오일필터','에어클리너','점화플러그','연료필터','미션오일'].concat(COMMON)},
+    '디젤':   {fuel:'주유량', unit:'L',   parts:['엔진오일·오일필터','에어클리너','연료필터','요소수(애드블루)','DPF·EGR 점검','미션오일'].concat(COMMON)},
+    'LPG':    {fuel:'주유량', unit:'L',   parts:['엔진오일·오일필터','에어클리너','점화플러그','LPG 필터','미션오일'].concat(COMMON)},
+    '하이브리드': {fuel:'주유량', unit:'L', parts:['엔진오일·오일필터','에어클리너','점화플러그','미션·감속기오일','하이브리드 배터리 점검','인버터 냉각수'].concat(COMMON)},
+    '전기':   {fuel:'충전량', unit:'kWh', parts:['감속기오일','배터리·모터 냉각수','고전압 배터리 점검'].concat(COMMON.filter(function(x){ return x !== '냉각수'; }))}
   };
   var vtype = (function(){ try { var v = localStorage.getItem(VKEY); return VEHICLES[v] ? v : '가솔린'; } catch(e){ return '가솔린'; } })();
   var V = function(){ return VEHICLES[vtype]; };
@@ -329,7 +353,8 @@ dialog img { display: block; max-width: 100%; max-height: 75vh; margin: 0 auto; 
   function applyVehicle(){
     setOptions($('cat'), CATS, catName);
     setOptions($('part'), V().parts.concat(['기타 정비']));
-    $('litersLbl').textContent = V().fuel + '량(' + V().unit + ')';
+    $('litersLbl').textContent = V().fuel + ' (' + V().unit + ')';
+    $('liters').placeholder = '0 ' + V().unit;
     $('vhint').textContent = vtype === '전기'
       ? '전기차는 엔진오일·점화플러그 등이 없어 해당 정비 항목을 뺐습니다.'
       : '정비를 고르면 ' + vtype + ' 차량에 맞는 정비 항목이 나타납니다.';
@@ -391,13 +416,13 @@ dialog img { display: block; max-width: 100%; max-height: 75vh; margin: 0 auto; 
   }
 
   $('save').addEventListener('click', function(){
-    var amount = parseFloat($('amount').value);
+    var amount = parseNum($('amount').value);
     if(!$('date').value){ alert('날짜를 입력하세요.'); return; }
-    if(isNaN(amount) || amount < 0){ alert('금액을 입력하세요.'); return; }
+    if(isNaN(amount) || amount <= 0){ alert('금액을 입력하세요.'); return; }
     var rec = {
       id: editId || String(Date.now()) + Math.random().toString(36).slice(2,6),
       date: $('date').value, cat: $('cat').value, amount: amount,
-      odo: parseFloat($('odo').value) || null,
+      odo: parseNum($('odo').value) || null,
       liters: $('cat').value === '주유' ? (parseFloat($('liters').value) || null) : null,
       part: $('cat').value === '정비' ? $('part').value : '',
       memo: $('memo').value.trim()
@@ -480,8 +505,9 @@ dialog img { display: block; max-width: 100%; max-height: 75vh; margin: 0 auto; 
       var x = items.filter(function(i){ return i.id === ed; })[0]; if(!x) return;
       editId = x.id; $('date').value = x.date;
       if(CATS.indexOf(x.cat) < 0){ var oc = document.createElement('option'); oc.value = x.cat; oc.textContent = catName(x.cat); $('cat').appendChild(oc); }
-      $('cat').value = x.cat; $('amount').value = x.amount;
-      $('odo').value = x.odo || ''; $('liters').value = x.liters || ''; $('memo').value = x.memo;
+      $('cat').value = x.cat; $('amount').value = x.amount ? x.amount.toLocaleString('ko-KR') : '';
+      $('odo').value = x.odo ? x.odo.toLocaleString('ko-KR') : ''; 
+      $('liters').value = x.liters || ''; $('memo').value = x.memo;
       toggleLiters(); setPart(x.part);
       pendingImg = null; imgRemoved = false; $('img').value = ''; hidePrev();
       if(x.img) idbGet(x.id, function(d){ if(d) showPrev(d); });
