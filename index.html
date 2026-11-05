@@ -2,7 +2,6 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<!-- user-scalable=no와 maximum-scale=1을 추가하여 모바일 터치 시 강제 확대 원천 차단 -->
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
@@ -90,7 +89,6 @@ input, select {
   font-weight: 500;
   pointer-events: none;
 }
-
 select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -364,11 +362,11 @@ dialog img { display: block; max-width: 100%; max-height: 75vh; margin: 0 auto; 
   var VKEY = KEY + '.vehicle';
   var COMMON = ['타이어 교체','타이어 위치교환','휠 얼라인먼트','브레이크 패드·라이닝','브레이크액','와이퍼','에어컨(캐빈) 필터','냉각수','12V 배터리'];
   var VEHICLES = {
-    '가솔린': {fuel:'주유량', unit:'L',   parts:['엔진오일·오일필터','에어클리너','점화플러그','연료필터','미션오일'].concat(COMMON)},
-    '디젤':   {fuel:'주유량', unit:'L',   parts:['엔진오일·오일필터','에어클리너','연료필터','요소수(애드블루)','DPF·EGR 점검','미션오일'].concat(COMMON)},
-    'LPG':    {fuel:'주유량', unit:'L',   parts:['엔진오일·오일필터','에어클리너','점화플러그','LPG 필터','미션오일'].concat(COMMON)},
-    '하이브리드': {fuel:'주유량', unit:'L', parts:['엔진오일·오일필터','에어클리너','점화플러그','미션·감속기오일','하이브리드 배터리 점검','인버터 냉각수'].concat(COMMON)},
-    '전기':   {fuel:'충전량', unit:'kWh', parts:['감속기오일','배터리·모터 냉각수','고전압 배터리 점검'].concat(COMMON.filter(function(x){ return x !== '냉각수'; }))}
+    '가솔린': {fuel:'주유', unit:'L', parts:['엔진오일·오일필터','에어클리너','점화플러그','연료필터','미션오일'].concat(COMMON)},
+    '디젤':   {fuel:'주유', unit:'L', parts:['엔진오일·오일필터','에어클리너','연료필터','요소수(애드블루)','DPF·EGR 점검','미션오일'].concat(COMMON)},
+    'LPG':    {fuel:'주유', unit:'L', parts:['엔진오일·오일필터','에어클리너','점화플러그','LPG 필터','미션오일'].concat(COMMON)},
+    '하이브리드': {fuel:'주유', unit:'L', parts:['엔진오일·오일필터','에어클리너','점화플러그','미션·감속기오일','하이브리드 배터리 점검','인버터 냉각수'].concat(COMMON)},
+    '전기':   {fuel:'충전', unit:'kWh', parts:['감속기오일','배터리·모터 냉각수','고전압 배터리 점검'].concat(COMMON.filter(function(x){ return x !== '냉각수'; }))}
   };
   var vtype = (function(){ try { var v = localStorage.getItem(VKEY); return VEHICLES[v] ? v : '가솔린'; } catch(e){ return '가솔린'; } })();
   var V = function(){ return VEHICLES[vtype]; };
@@ -395,7 +393,7 @@ dialog img { display: block; max-width: 100%; max-height: 75vh; margin: 0 auto; 
   function applyVehicle(){
     setOptions($('cat'), CATS, catName);
     setOptions($('part'), V().parts.concat(['기타 정비']));
-    $('litersLbl').textContent = V().fuel;
+    $('litersLbl').textContent = V().fuel + '량';
     $('litersUnit').textContent = V().unit;
     $('vhint').textContent = vtype === '전기'
       ? '전기차는 엔진오일·점화플러그 등이 없어 해당 정비 항목을 뺐습니다.'
